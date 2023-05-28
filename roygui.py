@@ -5,23 +5,15 @@ from tkinter.scrolledtext import ScrolledText
 import random
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import ImageTk, Image
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 def delete():
     output_text1.delete("0.0", tk.END)
-    plt.cla()
+    ax.clear()
+    canvas.draw()
 
-#def update_image():
-#    # Загружаем новое изображение
-#    new_image = Image.open("graph.png")
-#    new_photo = ImageTk.PhotoImage(new_image)
-#
-#    # Устанавливаем новое изображение в объект Label
-#    label.config(image=new_photo)
-#
-#    # Обновляем ссылку на объект PhotoImage, чтобы изображение не было удалено сборщиком мусора
-#    label.image = new_photo
 def create():   # Инициализация
     global swarm
     global velocity
@@ -34,6 +26,8 @@ def create():   # Инициализация
     global dim
     global mystat
     mystat = []
+    ax.clear()
+    canvas.draw()
     #np.random.seed(int(seed_entry.get()))
     dim = int(mutant_entry.get())
     k_entry.delete(0, tk.END)
@@ -50,13 +44,18 @@ def create():   # Инициализация
 def fitness(x):
     return (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
 
+
+def draw_graph(points):
+    # очищаем график перед его перерисовкой
+    ax.clear()
+    x = [point[0] for point in points]
+    y = [point[1] for point in points]
+
+    ax.scatter(x, y)
+    canvas.draw()
+
 def PSO():
-    # func - целевая функция
-    # dim - размерность пространства решений
-    # swarm_size - количество частиц в рое
-    # max_iter - максимальное число итераций
-    # bounds - границы пространства поиска
-    create()
+    #create()
     global swarm
     global velocity
     global pbest_pos
@@ -88,7 +87,7 @@ def PSO():
         if np.any(mask):
             gbest_value = np.min(pbest_value)
             gbest_pos = pbest_pos[np.argmin(pbest_value)]
-        if gbest_value <80 :
+        if gbest_value < 80 :
             mystat.append(gbest_value)
         # Обновление скорости и позиции каждой частицы
         #w = 0.7  # инерционный вес
@@ -104,13 +103,7 @@ def PSO():
         # Заменяем значения, находящиеся за границами, на соответствующие граничные значения
         swarm = np.where(swarm < bounds[0], bounds[0], swarm)
         swarm = np.where(swarm > bounds[1], bounds[1], swarm)
-
-    #plt.plot(range(1, len(mystat) + 1), mystat)
-    #plt.title("График зависимости точности от кол-ва поколений")
-    #plt.xlabel("Номер поколения")
-    #plt.ylabel("Минимальное значение для поколения")
-    #plt.savefig("graph.png")
-    #update_image()
+    draw_graph(swarm)
     output_text2.delete(1.0, tk.END)
     output_text2.insert(tk.END, "Номер, Результат, Вектор расположения \n")
     for i in range(chromo_val):
@@ -130,7 +123,7 @@ root = tk.Tk()
 root.title("Роевой алгоритм")
 
 # Set the size of the window
-root.geometry("1200x720")
+root.geometry("1200x800")
 
 # Create the left and right frames
 left_frame = ttk.Frame(root, padding=10)
@@ -236,15 +229,17 @@ output_text1.pack(side="top", fill="both", expand=True)
 delbutton = ttk.Button(frame3, text="Очистить", command=delete)
 delbutton.pack(side="bottom", fill="x")
 # Create the text output widget in frame3
-output_text2 = ScrolledText(right_frame, width=50, height=40)
+output_text2 = ScrolledText(right_frame, width=50, height=20)
 output_text2.pack()
 
-#image = Image.open("graph.png")
-#photo = ImageTk.PhotoImage(image)
-#label = tk.Label(right_frame, image=photo)
-#label.pack()
-#
 ################
+fig = Figure(figsize=(5, 4), dpi=100)
+ax = fig.add_subplot(111)
+canvas = FigureCanvasTkAgg(fig, master=right_frame)  # создаем холст для рисования
+canvas.draw()
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+
 dim = 2
 bounds = np.array([int(minn_entry.get()) * dim, int(maxx_entry.get()) * dim])
 swarm = np.empty((int(chromoval_entry.get()), dim))
